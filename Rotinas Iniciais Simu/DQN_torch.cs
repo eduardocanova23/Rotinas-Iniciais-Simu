@@ -80,7 +80,7 @@ namespace RotinasIniciais
                 exploration_max *= exploration_decay;
                 exploration_max = Math.Max(exploration_min, exploration_max);
                 if (this.rnd.NextDouble() < exploration_max)
-                    return rnd.Next(2);
+                    return rnd.Next(8);
             }
 
             var q_values = this.forward(state)[0];
@@ -108,6 +108,7 @@ namespace RotinasIniciais
         {
             var _state = new List<float>();
             var _next_state = new List<float>();
+
             for (long i = 0, imax = state.size()[0] + 1; i < imax; i++)
             {
                 _state.Add(state[0][i].item<float>());
@@ -117,28 +118,133 @@ namespace RotinasIniciais
                 _next_state.Add(next_state[0][i].item<float>());
             }
 
-            if (_next_state[0] == 0)
+            if (_next_state[0]==1^_next_state[0]==5^_next_state[0]==9^_next_state[0]==13^_next_state[0]==14^_next_state[0]==10)
             {
-                return -10;
+                return 0;
             }
-            else if (_next_state[0] == 3)
+
+            else if(_next_state[0] == 11 & _next_state[8] == 1)
             {
-                return 10;
+                return -2;
             }
-            else if (_state[1] == 1 && _next_state[0] == 1)
+
+            else if(_next_state[0] == 11 & _next_state[8] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 15 & _next_state[9] == 1)
+            {
+                return -2;
+            }
+
+            else if (_next_state[0] == 15 & _next_state[9] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 16 & _next_state[4] == 1)
+            {
+                return 4;
+            }
+
+            else if (_next_state[0] == 16 & _next_state[4] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 12 & _next_state[5] == 1)
+            {
+                return 4;
+            }
+
+            else if (_next_state[0] == 12 & _next_state[5] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 8 & _next_state[6] == 1)
+            {
+                return 4;
+            }
+
+            else if (_next_state[0] == 8 & _next_state[6] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 4 & _next_state[7] == 1)
+            {
+                return 4;
+            }
+
+            else if (_next_state[0] == 4 & _next_state[7] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 6 & _next_state[2] == 1)
             {
                 return 3;
             }
+
+            else if (_next_state[0] == 6 & _next_state[2] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 7 & _next_state[3] == 1)
+            {
+                return 5;
+            }
+
+            else if (_next_state[0] == 7 & _next_state[3] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 3 & _next_state[1] == 1)
+            {
+                return 2;
+            }
+
+            else if (_next_state[0] == 3 & _next_state[1] == 0)
+            {
+                return 0;
+            }
+
+            else if (_next_state[0] == 2)
+            {
+                return 10;
+            }
+
             else
             {
                 return 0;
             }
+
+            //if (_next_state[0] == 0)
+            //{
+            //    return -10;
+            //}
+            //else if (_next_state[0] == 3)
+            //{
+            //    return 10;
+            //}
+            //else if (_state[1] == 1 && _next_state[0] == 1)
+            //{
+            //    return 3;
+            //}
+            //else
+            //{
+            //    return 0;
+            //}
         }
 
         public (Tensor, bool) reset()
         {
             var done = false;
-            Tensor state = torch.tensor(new float[,] { { 2, 1 } });
+            Tensor state = torch.tensor(new float[,] { { 10, 1, 1, 1, 1, 1, 1, 1, 1, 1 } });
 
             return (state, done);
 
@@ -157,27 +263,311 @@ namespace RotinasIniciais
                 _next_state.Add((float)state[0][i].item<float>());
             }
 
-            if (action == 0)
+            
+
+            if (action == 0) // esquerda
             {
-                _next_state[0] -= 1;
-                //Console.WriteLine("andei pra esquerda");
+                if ( _state[0] == 1)
+                {
+                    _next_state[0] = 4;
+                }
+
+                else if (_state[0] == 3)
+                {
+
+                    _next_state[0] = 2;
+                    done = true;
+                }
+
+                else
+                {
+                    _next_state[0] -= 1;
+                }
             }
-            else
+            
+            
+
+            else if (action == 1) // direita 
             {
-                _next_state[0] += 1;
-                //Console.WriteLine("andei pra direita");
+                if(_state[0] == 16)
+                {
+                    _next_state[0] = 13;
+                }
+                
+                else if (_state[0] == 1)
+                {
+                    _next_state[0] = 2;
+                    done = true;
+                }
+
+                else
+                {
+                    _next_state[0] += 1;
+                }
+
             }
 
-            if (_next_state[0] == 0 || _next_state[0] == 3)
+            else if (action == 2) // cima 
+            {
+                if (_state[0] == 1)
+                {
+                    _next_state[0] = 13; 
+                }
+
+                else if (_state[0] == 3)
+                {
+                    _next_state[0] = 15;
+                }
+
+                else if (_state[0] == 4)
+                {
+                    _next_state[0] = 16;
+                }
+
+                else if (_state[0] == 6)
+                {
+                    _next_state[0] = 2;
+                    done = true;
+                }
+
+                else
+                {
+                    _next_state[0] -= 4;
+                }
+            }
+
+            else if (action == 3) // baixo
+            {
+                if (_state[0] == 13)
+                {
+                    _next_state[0] = 1;
+                }
+
+                else if (_state[0] == 14)
+                {
+                    _next_state[0] = 2;
+                    done=true;
+                }
+
+                else if (_state[0] == 15)
+                {
+                    _next_state[0] = 3;
+                }
+
+                else if (_state[0] == 16)
+                {
+                    _next_state[0] = 4;
+                }
+
+                else
+                {
+                    _next_state[0] += 4;
+                }
+            }
+
+            else if (action == 4) // diagonal cima direita
+            {
+                if (_state[0] == 1)
+                {
+                    _next_state[0] = 14;
+                }
+
+                else if (_state[0] == 3)
+                {
+                    _next_state[0] = 16;
+                }
+
+
+                else if (_state[0] == 5)
+                {
+                    _next_state[0] = 2;
+                    done = true;
+                }
+
+                else
+                {
+                    _next_state[0] -= 3;
+                }
+            }
+
+            else if (action == 5) // diagonal cima esquerda
+            {
+                if(_state[0] == 5)
+                {
+                    _next_state[0] = 4;
+                }
+
+                else if (_state[0] == 4)
+                {
+                    _next_state[0] = 15;
+                }
+
+                else if (_state[0] == 3)
+                {
+                    _next_state[0] = 14;
+                }
+
+                else if (_state[0] == 1)
+                {
+                    _next_state[0] = 16;
+                }
+
+                else if (_state[0] == 7)
+                {
+                    _next_state[0] = 2;
+                    done=true;
+                }
+
+                else
+                {
+                    _next_state[0] -= 5;
+                }
+            }
+
+            else if (action == 6) // diagonal baixo esquerda
+            {
+
+                if (_state[0] == 14)
+                {
+                    _next_state[0] = 1;
+                }
+
+                else if (_state[0] == 15)
+                {
+                    _next_state[0] = 2;
+                    done = true;
+                }
+
+                else if (_state[0] == 16)
+                {
+                    _next_state[0] = 3;
+                }
+
+                else
+                {
+                    _next_state[0] += 3;
+                }
+            }
+
+            else if (action == 7) // diagonal baixo direita
+            {
+                if(_state[0] == 12)
+                {
+                    _next_state[0] = 13;
+                }
+
+                else if (_state[0] == 13)
+                {
+                    _next_state[0] = 2;
+                    done = true;
+                }
+
+                else if (_state[0] == 14)
+                {
+                    _next_state[0] = 3;
+                }
+
+                else if (_state[0] == 15)
+                {
+                    _next_state[0] = 4;
+                }
+
+                else if (_state[0] == 16)
+                {
+                    _next_state[0] = 1;
+                }
+
+                else
+                {
+                    _next_state[0] += 5;
+                }
+            }
+
+            if (_next_state[0] == 2 || _next_state[0] == 13)
             {
                 done = true;
                 //Console.WriteLine("caiu no fogo ou ganhou");
             }
-            if (_next_state[1] == 1 && _next_state[0] == 1)
+            if (_next_state[1] == 1 && _next_state[0] == 3)
             {
                 _next_state[1] = 0;
+                _next_state[4] = 0;
+                _next_state[5] = 0;
+                _next_state[6] = 0;
+                _next_state[7] = 0;
                 //Console.WriteLine("diamante parou de existir");
             }
+
+            if (_next_state[2] == 1 && _next_state[0] == 6)
+            {
+                _next_state[2] = 0;
+                _next_state[4] = 0;
+                _next_state[5] = 0;
+                _next_state[6] = 0;
+                _next_state[7] = 0;
+                //Console.WriteLine("diamante parou de existir");
+            }
+
+            if (_next_state[3] == 1 && _next_state[0] == 7)
+            {
+                _next_state[3] = 0;
+                _next_state[4] = 0;
+                _next_state[5] = 0;
+                _next_state[6] = 0;
+                _next_state[7] = 0;
+                //Console.WriteLine("diamante parou de existir");
+            }
+
+            if (_next_state[4] == 1 && _next_state[0] == 16)
+            {
+                _next_state[4] = 0;
+                _next_state[1] = 0;
+                _next_state[2] = 0;
+                _next_state[3] = 0;
+                //Console.WriteLine("diamante parou de existir");
+            }
+
+            if (_next_state[5] == 1 && _next_state[0] == 12)
+            {
+                _next_state[5] = 0;
+                _next_state[1] = 0;
+                _next_state[2] = 0;
+                _next_state[3] = 0;
+                //Console.WriteLine("diamante parou de existir");
+            }
+
+            if (_next_state[6] == 1 && _next_state[0] == 8)
+            {
+                _next_state[6] = 0;
+                _next_state[1] = 0;
+                _next_state[2] = 0;
+                _next_state[3] = 0;
+                //Console.WriteLine("diamante parou de existir");
+            }
+
+            if (_next_state[7] == 1 && _next_state[0] == 4)
+            {
+                _next_state[7] = 0;
+                _next_state[1] = 0;
+                _next_state[2] = 0;
+                _next_state[3] = 0;
+                //Console.WriteLine("diamante parou de existir");
+            }
+
+            if (_next_state[8] == 1 && _next_state[0] == 11)
+            {
+                _next_state[8] = 0;
+                //Console.WriteLine("diamante parou de existir");
+            }
+
+            if (_next_state[9] == 1 && _next_state[0] == 15)
+            {
+                _next_state[9] = 0;
+                //Console.WriteLine("diamante parou de existir");
+            }
+
+
+
             next_state = torch.tensor(new float[,] { { _next_state[0], _next_state[1] } });
             int reward = calc_reward(state, next_state, done);
 
