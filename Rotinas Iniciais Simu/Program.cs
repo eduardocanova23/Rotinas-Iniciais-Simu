@@ -40,7 +40,7 @@ int n_outputs = 4;
 int n_inputs = 10;
 int layers = 2;
 int neurons = 32;
-int episodes = (int)1e5;
+int episodes = (int)1e4;
 var device = torch.cuda.is_available() ? torch.device("CUDA") : torch.device("cpu");
 
 //dqn_torch model = new dqn_torch(batch_size, gamma, exploration_max, exploration_min, exploration_decay, learning_rate, tau, n_outputs, n_inputs, layers, neurons, "model", device);
@@ -72,15 +72,16 @@ int action = -1;
 float[,,,,,,,,,,] qTable = makeQtable();
 for (int ep = 0; ep < episodes; ep++)
 {
+    Console.Write(ep);
     (state, done) = env.reset();
     while (!done)
     {
-
+        Console.WriteLine(done);
         action = get_actionQ(state, rnd, qTable);
 
         (next_state, reward, done) = env.step(state, action);
-        qTable[(int)state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, action]
-            = learning_rate_Q * (reward + gamma* argMaxTable(next_state, qTable) - qTable[state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, action]);
+        qTable[(int)state[0, 0]-1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], action]
+            = learning_rate_Q * (reward + gamma* argMaxTable(next_state, qTable) - qTable[(int)state[0, 0]-1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], action]);
 
     }
 }
@@ -90,11 +91,11 @@ for (int ep = 0; ep < episodes; ep++)
     // ============================= LOOP DE EXECUCAO DO Q LEARNING ===================================
 
     (state, done) = env.reset();
-    int rec_total;
+    int rec_total = 0;
     while (!done)
     {
         action = get_actionQ(state, rnd, qTable);
-        string direcao;
+        string direcao = "nada";
         if (action == 0)
         {
             direcao = "esquerda";
@@ -118,9 +119,11 @@ for (int ep = 0; ep < episodes; ep++)
         Console.WriteLine("");
 
     }
-    Console.WriteLine("Minha recompensa total foi de " + ToString(rec_total));
+    Console.WriteLine($"Minha recompensa total foi de {rec_total}");
 
 // ================================================================================================
+
+
 
 
 // ===================== LOOP DO DQN ==============================================
@@ -390,12 +393,12 @@ int get_action(float[,] state, dqn_torch nnet, Random rnd, bool should_explore =
 
 int argMaxTable(float[,]  state, float[,,,,,,,,,,] qTable)
 {
-    int max = -8000;
-    int compare;
-    int action;
-    for (int i = 0; i < 4; i++)
+    float max = -8000;
+    float compare;
+    int action = -1;
+    for (int i = 0; i < 3; i++)
     {
-        compare = qTable[state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, i];
+        compare = qTable[(int)state[0, 0]-1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], i];
         if (compare> max)
         {
             max = compare;
@@ -977,10 +980,7 @@ public class replay_memory
     this.memory.Add((state, action, reward, next_state, done));
   }
 
-  public List<(float[,], int, float, float[,], bool)> argMax(float[,] state)
-    {
 
-    }
 
   public List<(float[,], int, float, float[,], bool)> sample(int batch_size)
   {
