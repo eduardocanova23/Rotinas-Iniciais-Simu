@@ -34,7 +34,7 @@ float exploration_max = 1.0f;
 float exploration_min = 0.01f;
 float exploration_decay = 0.9999f;
 float learning_rate = 0.003f;
-float learning_rate_Q = 0.3f;
+float learning_rate_Q = 0.03f;
 float tau = 0.125f;
 int n_outputs = 4;
 int n_inputs = 10;
@@ -74,12 +74,16 @@ for (int ep = 0; ep < episodes; ep++)
 {
     Console.Write(ep);
     (state, done) = env.reset();
+    action = get_actionQ(state, rnd, qTable);
+    (next_state, reward, done) = env.step(state, action);
     while (!done)
     {
-        Console.WriteLine(done);
+        state = next_state;
         action = get_actionQ(state, rnd, qTable);
+        
 
         (next_state, reward, done) = env.step(state, action);
+        Console.WriteLine(reward);
         qTable[(int)state[0, 0]-1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], action]
             = learning_rate_Q * (reward + gamma* argMaxTable(next_state, qTable) - qTable[(int)state[0, 0]-1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], action]);
 
@@ -94,7 +98,7 @@ for (int ep = 0; ep < episodes; ep++)
     int rec_total = 0;
     while (!done)
     {
-        action = get_actionQ(state, rnd, qTable);
+        action = get_actionQ(state, rnd, qTable, false);
         string direcao = "nada";
         if (action == 0)
         {
@@ -117,6 +121,7 @@ for (int ep = 0; ep < episodes; ep++)
         rec_total += reward;
         Console.WriteLine($"andei para a {direcao}.");
         Console.WriteLine("");
+        state = next_state;
 
     }
     Console.WriteLine($"Minha recompensa total foi de {rec_total}");
@@ -693,17 +698,17 @@ public class simple_env
             //Console.WriteLine("andei pra cima");
             if (state[0,0] == 1)
             {
-                next_state[0,0] = 13;
+                next_state[0,0] = 1;
             }
 
             else if (state[0,0] == 3)
             {
-                next_state[0,0] = 15;
+                next_state[0,0] = 3;
             }
 
             else if (state[0,0] == 4)
             {
-                next_state[0,0] = 16;
+                next_state[0,0] = 4;
             }
 
             else if (state[0,0] == 6)
