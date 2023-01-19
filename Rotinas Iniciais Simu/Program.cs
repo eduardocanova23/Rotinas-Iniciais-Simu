@@ -9,6 +9,7 @@
 //using static Tensorflow.KerasApi;
 //using Keras.Models;
 
+
 using TorchSharp;
 using static TorchSharp.torch.nn;
 using static TorchSharp.TensorExtensionMethods;
@@ -33,8 +34,9 @@ float exploration_max = 1.0f;
 float exploration_min = 0.01f;
 float exploration_decay = 0.9999f;
 float learning_rate = 0.003f;
+float learning_rate_Q = 0.3f;
 float tau = 0.125f;
-int n_outputs = 8;
+int n_outputs = 4;
 int n_inputs = 10;
 int layers = 2;
 int neurons = 32;
@@ -64,6 +66,64 @@ var next_state = new float[,] { { state[0,0], state[0,1], state[0, 2], state[0, 
 int reward = 0;
 int action = -1;
 
+
+
+//====================== LOOP DO Q LEARNING NORMAL============================
+float[,,,,,,,,,,] qTable = makeQtable();
+for (int ep = 0; ep < episodes; ep++)
+{
+    (state, done) = env.reset();
+    while (!done)
+    {
+
+        action = get_actionQ(state, rnd, qTable);
+
+        (next_state, reward, done) = env.step(state, action);
+        qTable[(int)state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, action]
+            = learning_rate_Q * (reward + gamma* argMaxTable(next_state, qTable) - qTable[state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, action]);
+
+    }
+}
+    // ===========================================================================
+
+
+    // ============================= LOOP DE EXECUCAO DO Q LEARNING ===================================
+
+    (state, done) = env.reset();
+    int rec_total;
+    while (!done)
+    {
+        action = get_actionQ(state, rnd, qTable);
+        string direcao;
+        if (action == 0)
+        {
+            direcao = "esquerda";
+        }
+        if (action == 1)
+        {
+            direcao = "direita";
+        }
+        if (action == 2)
+        {
+            direcao = "cima";
+        }
+        if (action == 3)
+        {
+            direcao = "baixo";
+        }
+        
+        (next_state, reward, done) = env.step(state, action);
+        rec_total += reward;
+        Console.WriteLine($"andei para a {direcao}.");
+        Console.WriteLine("");
+
+    }
+    Console.WriteLine("Minha recompensa total foi de " + ToString(rec_total));
+
+// ================================================================================================
+
+
+// ===================== LOOP DO DQN ==============================================
 for (int ep = 0; ep < episodes; ep++)
 {
   (state, done) = env.reset();
@@ -71,7 +131,12 @@ for (int ep = 0; ep < episodes; ep++)
   List<float> l = new();
   while (!done)
   {
+    if (ep % 100 ==0)
+        {
+            action = get_action(state, seq, rnd, true, true);
+        }
     action = get_action(state, seq, rnd);
+    
     (next_state, reward, done) = env.step(state, action);
     memory.remember(state, action, reward, next_state, done);
 
@@ -163,7 +228,8 @@ for (int ep = 0; ep < episodes; ep++)
 
   Console.WriteLine($" --- Episode {ep} --- Sum of Ep. Rewards: {list_rewards[ep]}, Mean Ep. Loss: {list_losses[ep]}, Exploration: {exploration_max}");
 
-  aux.load_state_dict(seq.state_dict());
+
+    aux.load_state_dict(seq.state_dict());
 }
 
 float replay(replay_memory memory, dqn_torch model, Module<Tensor, Tensor> aux_model, optim.Optimizer optimizer)
@@ -250,7 +316,7 @@ float replay(replay_memory memory, dqn_torch model, Module<Tensor, Tensor> aux_m
   }
 }
 
-int get_action(float[,] state, dqn_torch nnet, Random rnd, bool should_explore = true)
+int get_action(float[,] state, dqn_torch nnet, Random rnd, bool should_explore = true, bool sould_print=false)
 {
   int action = -1;
   Tensor q_values;
@@ -259,17 +325,94 @@ int get_action(float[,] state, dqn_torch nnet, Random rnd, bool should_explore =
     exploration_max *= exploration_decay;
     exploration_max = Math.Max(exploration_min, exploration_max);
     if (torch.rand(1).item<float>() < exploration_max)
-      return rnd.Next(7);
+      return rnd.Next(3);
   }
   using (torch.no_grad())
   {
     q_values = nnet.forward(tensor(state))[0];
   }
-  var best_action = torch.argmax(q_values);
+  
+    var best_action = torch.argmax(q_values);
 
   action = (int)best_action.item<long>();
+    Tensor q_values_init;
+    if (sould_print)
+    {
+
+        Console.WriteLine("Q VALUES OF INITIAL POSITION");
+        float[,] state_ini = new float[,] { { 10, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+        q_values_init = nnet.forward(tensor(state_ini))[0];
+        Console.WriteLine("ESQUERDA:" + (float)q_values_init[0].item<float>());
+        Console.WriteLine("DIREITA: " + (float)q_values_init[1].item<float>());
+        Console.WriteLine("CIMA: " + (float)q_values_init[2].item<float>());
+        Console.WriteLine("BAIXO: " + (float)q_values_init[3].item<float>());
+        System.Threading.Thread.Sleep(10000);
+
+        float[,] state_2;
+        Console.WriteLine("Q VALUES OF NEXT STATE");
+        int reward_2;
+        bool done_2;
+        var best_action_2 = torch.argmax(q_values_init);
+        (state_2, reward_2, done_2) = env.step(state_ini, (int)best_action_2.item<long>());
+        q_values_init = nnet.forward(tensor(state_2))[0];
+        Console.WriteLine("ESQUERDA:" +(float)q_values_init[0].item<float>());
+        Console.WriteLine("DIREITA: " +(float)q_values_init[1].item<float>());
+        Console.WriteLine("CIMA: " +(float)q_values_init[2].item<float>());
+        Console.WriteLine("BAIXO: " +(float)q_values_init[3].item<float>());
+        System.Threading.Thread.Sleep(10000);
+
+
+    }
   return action;
 }
+
+
+// ============================ GET ACTION DO Q LEARNING NORMAL ===================================================
+
+ int get_actionQ(float[,] state, Random rnd, float[,,,,,,,,,,] qTable, bool should_explore = true, bool sould_print = false)
+{
+    int action = -1;
+    if (should_explore)
+    {
+        exploration_max *= exploration_decay;
+        exploration_max = Math.Max(exploration_min, exploration_max);
+        if (torch.rand(1).item<float>() < exploration_max)
+            return rnd.Next(3);
+    }
+
+    int best_action = argMaxTable(state, qTable);
+
+    return best_action;
+}
+
+    // ===============================================================================================================
+
+
+int argMaxTable(float[,]  state, float[,,,,,,,,,,] qTable)
+{
+    int max = -8000;
+    int compare;
+    int action;
+    for (int i = 0; i < 4; i++)
+    {
+        compare = qTable[state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, i];
+        if (compare> max)
+        {
+            max = compare;
+            action = i;
+        }
+
+        
+    }
+    return action;
+}
+
+ float[,,,,,,,,,,] makeQtable()
+    {
+        return new float[16, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4];
+    }
+
+
 class dqn_torch : Module<Tensor, Tensor>
 {
   //public int batch_size;
@@ -279,8 +422,8 @@ class dqn_torch : Module<Tensor, Tensor>
   //public float exploration_decay;
   //public float learning_rate;
   //public float tau;
-  //public int n_actions;
   //public int n_inputs;
+  //public int n_actions;
   //public int layers;
   //public int neurons;
 
@@ -483,7 +626,9 @@ public class simple_env
 
     }
 
-  public (float[,], int, bool) step(float[,] state, int action)
+    
+
+    public (float[,], int, bool) step(float[,] state, int action)
   {
     float[,] next_state = new float[,] { { state[0,0], state[0,1], state[0,2], state[0, 3], state[0, 4], state[0, 5], state[0, 6], state[0, 7], state[0, 8], state[0, 9] } };
     //var _state = new List<float>();
@@ -832,6 +977,11 @@ public class replay_memory
     this.memory.Add((state, action, reward, next_state, done));
   }
 
+  public List<(float[,], int, float, float[,], bool)> argMax(float[,] state)
+    {
+
+    }
+
   public List<(float[,], int, float, float[,], bool)> sample(int batch_size)
   {
     List<(float[,] state, int action, float reward, float[,] next_state, bool done)> selected = this.memory.Select(x => x).OrderBy(x => rnd.Next()).Take(batch_size).ToList();
@@ -845,6 +995,10 @@ public class replay_memory
       return this.memory.Count;
     }
   }
+
 }
+
+
+
 
 
