@@ -21,17 +21,17 @@ namespace Rotinas_Iniciais_Simu
     int n_inputs;
     int episodes;
     int max_episodes;
-    float[,,,,,,,,,,] qTable;
+    float[,] qTable;
 
     public q_learning()
     {
       Random rnd = new();
       int memory_size = Convert.ToInt32(5 * Math.Pow(10, 5));
-      gamma = 1f;
+      gamma = 0.9f;
       exploration_max = 1f;
       exploration_min = 0.0f;
       exploration_decay = 0.999f;
-      learning_rate_Q = 0.5f;
+      learning_rate_Q = 1f;
       n_outputs = 4;
       n_inputs = 10;
       max_episodes = (int)1e5;
@@ -40,7 +40,7 @@ namespace Rotinas_Iniciais_Simu
     }
 
 
-    int get_actionQ(float[,] state, Random rnd, float[,,,,,,,,,,] qTable, bool should_explore = true, bool sould_print = false)
+    int get_actionQ(int state, Random rnd, float[,] qTable, bool should_explore = true, bool sould_print = false)
     {
       if (should_explore)
       {
@@ -54,22 +54,22 @@ namespace Rotinas_Iniciais_Simu
       return best_action;
     }
 
-    float[,,,,,,,,,,] makeQtable()
+    float[,] makeQtable()
     {
-      return new float[16, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4];
+      return new float[16,4];
     }
     
-    int argMaxTable(float[,] state, float[,,,,,,,,,,] qTable)
+    int argMaxTable(int state, float[,] qTable)
     {
       float max = float.MinValue;
       float compare;
       int action = -1;
       for (int a = 0; a < n_outputs; a++)
       {
-        if (state[0, 0] <= 0)
+        if (state <= 0)
           throw new Exception(" state or next_state with position value incorrect.");
 
-        compare = qTable[(int)state[0, 0] - 1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], a];
+        compare = qTable[state - 1, a];
         if (compare > max)
         {
           max = compare;
@@ -80,20 +80,38 @@ namespace Rotinas_Iniciais_Simu
         throw new Exception("Action with invalid value/was not assigned");
       return action;
     }
+    float MaxTable(int state, float[,] qTable)
+    {
+      float max = float.MinValue;
+      float compare;
+      int action = -1;
+      for (int a = 0; a < n_outputs; a++)
+      {
+        if (state <= 0)
+          throw new Exception(" state or next_state with position value incorrect.");
 
-    void print_environment(float[,] state, float[,] ns, simple_env env, float reward, float ep_reward, int episode, float old_state_Q, float new_state_Q)
+        compare = qTable[state - 1, a];
+        if (compare > max)
+        {
+          max = compare;
+          action = a;
+        }
+      }
+      return max;
+    }
+
+    void print_environment(int state, int ns, simple_env env, float reward, float ep_reward, int episode, float old_state_Q, float new_state_Q)
     {
       Console.Clear();
-      int pos = (int)state[0, 0];
+      int pos = state;
       Console.WriteLine("Rewards: ");
       for (int i = 1; i <= 16; i++)
       {
-        float[,] next_state = (float[,])state.Clone();
-        next_state[0, 0] = i;
+        int next_state = i;
 
         if (i == pos)
           Console.BackgroundColor = ConsoleColor.DarkBlue;
-        if (ns[0, 0] == i)
+        if (ns == i)
           Console.BackgroundColor = ConsoleColor.DarkMagenta;
         if (i == 2)
           Console.BackgroundColor = ConsoleColor.Green;
@@ -142,7 +160,7 @@ namespace Rotinas_Iniciais_Simu
       // Print state action values
       Console.WriteLine("State action values: L R U D");
       for (int a = 0; a < 4; a++)
-        Console.Write(String.Format("{0, 5:0.00}", qTable[(int)state[0, 0] - 1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], a]));
+        Console.Write(String.Format("{0, 5:0.00}", qTable[state - 1, a]));
 
       System.Threading.Thread.Sleep(50);
     }
@@ -152,7 +170,7 @@ namespace Rotinas_Iniciais_Simu
       Console.WriteLine("Começando Q-Learning...");
       var env = new simple_env();
       var (state, done) = env.reset();
-      float[,] next_state;
+      int next_state;
       float reward;
       for (int ep = 0; ep < max_episodes; ep++)
       {
@@ -168,26 +186,15 @@ namespace Rotinas_Iniciais_Simu
           (next_state, reward, done) = env.step(state, action);
           
 
-          float old_state_Q = qTable[(int)state[0, 0] - 1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], action];
-          if (state[0, 0] <= 0 | next_state[0, 0] <= 0)
+          float old_state_Q = qTable[state - 1, action];
+          if (state <= 0 | next_state <= 0)
             throw new Exception(" state or next_state with position value incorrect.");
-          float new_state_Q = (reward + gamma * argMaxTable(next_state, qTable));
-          qTable[
-            (int)state[0, 0] - 1,
-            (int)state[0, 1],
-            (int)state[0, 2],
-            (int)state[0, 3],
-            (int)state[0, 4],
-            (int)state[0, 5],
-            (int)state[0, 6],
-            (int)state[0, 7],
-            (int)state[0, 8],
-            (int)state[0, 9],
-            action] = (1-learning_rate_Q) * old_state_Q  + learning_rate_Q * new_state_Q;
+          float new_state_Q = (reward + gamma * MaxTable(next_state, qTable));
+          qTable[state - 1, action] =  new_state_Q;
           
           print_environment(state, next_state, env, reward, ep_reward, ep, old_state_Q, new_state_Q);
           ep_reward += reward;
-          state = (float[,])next_state.Clone();
+          state = next_state;
           
         }
       }
