@@ -24,7 +24,11 @@ using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Python.Runtime;
+using Rotinas_Iniciais_Simu;
+using System.Reflection.Metadata.Ecma335;
+
+var QL = new QLearning();
+
 
 Random rnd = new();
 int memory_size = Convert.ToInt32(5 * Math.Pow(10, 5));
@@ -62,7 +66,7 @@ replay_memory memory = new replay_memory(memory_size);
 List<int> list_rewards = new();
 List<float> list_losses = new();
 (float[,] state, bool done) = env.reset();
-var next_state = new float[,] { { state[0,0], state[0,1], state[0, 2], state[0, 3], state[0, 4], state[0, 5], state[0, 6], state[0, 7], state[0, 8], state[0, 9] } };
+var next_state = new float[,] { { state[0, 0], state[0, 1], state[0, 2], state[0, 3], state[0, 4], state[0, 5], state[0, 6], state[0, 7], state[0, 8], state[0, 9] } };
 int reward = 0;
 int action = -1;
 
@@ -72,53 +76,68 @@ int action = -1;
 float[,,,,,,,,,,] qTable = makeQtable();
 for (int ep = 0; ep < episodes; ep++)
 {
-    (state, done) = env.reset();
-    while (!done)
-    {
+  float ep_reward = 0;
+  (state, done) = env.reset();
+  int iter = 0;
+  while (!done)
+  {
+    iter++;
+    action = get_actionQ(state, rnd, qTable);
 
-        action = get_actionQ(state, rnd, qTable);
-
-        (next_state, reward, done) = env.step(state, action);
-        qTable[(int)state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, action]
-            = learning_rate_Q * (reward + gamma* argMaxTable(next_state, qTable) - qTable[state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, action]);
-
-    }
+    (next_state, reward, done) = env.step(state, action);
+    ep_reward += reward;
+    float state_value = qTable[(int)state[0, 0] - 1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], action];
+    qTable[
+      (int)state[0, 0] - 1, 
+      (int)state[0, 1], 
+      (int)state[0, 2], 
+      (int)state[0, 3], 
+      (int)state[0, 4], 
+      (int)state[0, 5], 
+      (int)state[0, 6], 
+      (int)state[0, 7], 
+      (int)state[0, 8], 
+      (int)state[0, 9], 
+      action] = learning_rate_Q * (reward + gamma * argMaxTable(next_state, qTable) - state_value);
+    state = (float[,])next_state.Clone();
+  }
+  Console.WriteLine($"Episode reward during training: {ep_reward}");
 }
-    // ===========================================================================
+// ===========================================================================
 
 
-    // ============================= LOOP DE EXECUCAO DO Q LEARNING ===================================
+// ============================= LOOP DE EXECUCAO DO Q LEARNING ===================================
 
-    (state, done) = env.reset();
-    int rec_total;
-    while (!done)
-    {
-        action = get_actionQ(state, rnd, qTable);
-        string direcao;
-        if (action == 0)
-        {
-            direcao = "esquerda";
-        }
-        if (action == 1)
-        {
-            direcao = "direita";
-        }
-        if (action == 2)
-        {
-            direcao = "cima";
-        }
-        if (action == 3)
-        {
-            direcao = "baixo";
-        }
-        
-        (next_state, reward, done) = env.step(state, action);
-        rec_total += reward;
-        Console.WriteLine($"andei para a {direcao}.");
-        Console.WriteLine("");
+(state, done) = env.reset();
+int rec_total = 0;
+while (!done)
+{
+  action = get_actionQ(state, rnd, qTable);
+  string direcao = "";
+  if (action == 0)
+  {
+    direcao = "esquerda";
+  }
+  if (action == 1)
+  {
+    direcao = "direita";
+  }
+  if (action == 2)
+  {
+    direcao = "cima";
+  }
+  if (action == 3)
+  {
+    direcao = "baixo";
+  }
 
-    }
-    Console.WriteLine("Minha recompensa total foi de " + ToString(rec_total));
+  (next_state, reward, done) = env.step(state, action);
+  rec_total += reward;
+  Console.WriteLine($"andei para a {direcao}.");
+  Console.WriteLine("");
+
+}
+Console.WriteLine($"Minha recompensa total foi de {rec_total}.");
 
 // ================================================================================================
 
@@ -131,16 +150,16 @@ for (int ep = 0; ep < episodes; ep++)
   List<float> l = new();
   while (!done)
   {
-    if (ep % 100 ==0)
-        {
-            action = get_action(state, seq, rnd, true, true);
-        }
+    if (ep % 100 == 0)
+    {
+      action = get_action(state, seq, rnd, true, true);
+    }
     action = get_action(state, seq, rnd);
-    
+
     (next_state, reward, done) = env.step(state, action);
     memory.remember(state, action, reward, next_state, done);
 
-    if (!(memory.size < batch_size+100))
+    if (!(memory.size < batch_size + 100))
     {
 
       List<(float[,] state, int action, float reward, float[,] next_state, bool done)> samples = memory.sample(batch_size);
@@ -149,15 +168,15 @@ for (int ep = 0; ep < episodes; ep++)
       List<Tensor> Qs_expected = new();
       foreach (var sample in samples)
       {
-        
+
         //var stateT = tensor(new float[,] { { sample.state[0][0].item<float>(), sample.state[0][1].item<float>() } }, dtype: ScalarType.Float32, device: torch.CPU);
         //var next_stateT = tensor(new float[,] { { sample.next_state[0][0].item<float>(), sample.next_state[0][1].item<float>() } }, dtype: ScalarType.Float32, device: torch.CPU);
         //var actionT = tensor(new float[] { sample.action }, dtype: ScalarType.Float32, device: torch.CPU);
         //var rewardT = tensor(new float[] { sample.reward }, dtype: ScalarType.Float32, device: torch.CPU);
         //var doneT = tensor(new float[] { sample.done ? 1.0f : 0.0f }, dtype: ScalarType.Float32, device: torch.CPU);
 
-        var stateT = tensor(new float[,] { {sample.state[0,0],sample.state[0,1],sample.state[0, 2],sample.state[0, 3],sample.state[0, 4],sample.state[0, 5],sample.state[0, 6],sample.state[0, 7],sample.state[0, 8],sample.state[0, 9] } }, dtype: ScalarType.Float32, device: torch.CPU);
-        var next_stateT = tensor(new float[,] { {sample.next_state[0,0],sample.next_state[0,1],sample.next_state[0,1],sample.next_state[0,2],sample.next_state[0,3],sample.next_state[0,4],sample.next_state[0,5],sample.next_state[0, 6], sample.next_state[0, 7], sample.next_state[0, 8], sample.next_state[0, 9]} }, dtype: ScalarType.Float32, device: torch.CPU);
+        var stateT = tensor(new float[,] { { sample.state[0, 0], sample.state[0, 1], sample.state[0, 2], sample.state[0, 3], sample.state[0, 4], sample.state[0, 5], sample.state[0, 6], sample.state[0, 7], sample.state[0, 8], sample.state[0, 9] } }, dtype: ScalarType.Float32, device: torch.CPU);
+        var next_stateT = tensor(new float[,] { { sample.next_state[0, 0], sample.next_state[0, 1], sample.next_state[0, 1], sample.next_state[0, 2], sample.next_state[0, 3], sample.next_state[0, 4], sample.next_state[0, 5], sample.next_state[0, 6], sample.next_state[0, 7], sample.next_state[0, 8], sample.next_state[0, 9] } }, dtype: ScalarType.Float32, device: torch.CPU);
         var actionT = tensor(new float[] { sample.action }, dtype: ScalarType.Float32, device: torch.CPU);
         var rewardT = tensor(new float[] { sample.reward }, dtype: ScalarType.Float32, device: torch.CPU);
         var doneT = tensor(new float[] { sample.done ? 1.0f : 0.0f }, dtype: ScalarType.Float32, device: torch.CPU);
@@ -182,7 +201,7 @@ for (int ep = 0; ep < episodes; ep++)
       loss.backward();
       optimizer.step();
       l.Add(loss.item<float>());
-      
+
 
       //Tensor states = torch.cat(samples.Select(x => x.state).ToList());
       //Tensor next_states = torch.cat(samples.Select(x => x.next_state.clone()).ToList());
@@ -220,7 +239,7 @@ for (int ep = 0; ep < episodes; ep++)
       //loss.print();
     }
 
-    state = new float[,] { { next_state[0,0], next_state[0,1], next_state[0, 2], next_state[0, 3], next_state[0, 4], next_state[0, 5], next_state[0, 6], next_state[0, 7], next_state[0, 8], next_state[0, 9] } };
+    state = new float[,] { { next_state[0, 0], next_state[0, 1], next_state[0, 2], next_state[0, 3], next_state[0, 4], next_state[0, 5], next_state[0, 6], next_state[0, 7], next_state[0, 8], next_state[0, 9] } };
     r.Add(reward);
   }
   list_rewards.Add(r.Sum());
@@ -229,7 +248,7 @@ for (int ep = 0; ep < episodes; ep++)
   Console.WriteLine($" --- Episode {ep} --- Sum of Ep. Rewards: {list_rewards[ep]}, Mean Ep. Loss: {list_losses[ep]}, Exploration: {exploration_max}");
 
 
-    aux.load_state_dict(seq.state_dict());
+  aux.load_state_dict(seq.state_dict());
 }
 
 float replay(replay_memory memory, dqn_torch model, Module<Tensor, Tensor> aux_model, optim.Optimizer optimizer)
@@ -270,11 +289,11 @@ float replay(replay_memory memory, dqn_torch model, Module<Tensor, Tensor> aux_m
   // -=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=--=-=- APPROACH 2
 
   if (memory.size < batch_size) return -1f;
-  
+
   var loss = new List<float>();
   var _states = new float[32, 10];
   var _targets = new float[32, 10];
-  
+
   List<(float[,] state, int action, float reward, float[,] next_state, bool done)> samples = memory.sample(batch_size);
   var states = torch.cat(samples.Select(x => tensor(x.state)).ToList());
 
@@ -285,7 +304,7 @@ float replay(replay_memory memory, dqn_torch model, Module<Tensor, Tensor> aux_m
   //}
   //var states = torch.tensor(_states);
 
-  
+
   Tensor targets;
 
   targets = aux_model.forward(states);
@@ -316,7 +335,7 @@ float replay(replay_memory memory, dqn_torch model, Module<Tensor, Tensor> aux_m
   }
 }
 
-int get_action(float[,] state, dqn_torch nnet, Random rnd, bool should_explore = true, bool sould_print=false)
+int get_action(float[,] state, dqn_torch nnet, Random rnd, bool should_explore = true, bool sould_print = false)
 {
   int action = -1;
   Tensor q_values;
@@ -331,86 +350,82 @@ int get_action(float[,] state, dqn_torch nnet, Random rnd, bool should_explore =
   {
     q_values = nnet.forward(tensor(state))[0];
   }
-  
-    var best_action = torch.argmax(q_values);
+
+  var best_action = torch.argmax(q_values);
 
   action = (int)best_action.item<long>();
-    Tensor q_values_init;
-    if (sould_print)
-    {
+  Tensor q_values_init;
+  if (sould_print)
+  {
 
-        Console.WriteLine("Q VALUES OF INITIAL POSITION");
-        float[,] state_ini = new float[,] { { 10, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-        q_values_init = nnet.forward(tensor(state_ini))[0];
-        Console.WriteLine("ESQUERDA:" + (float)q_values_init[0].item<float>());
-        Console.WriteLine("DIREITA: " + (float)q_values_init[1].item<float>());
-        Console.WriteLine("CIMA: " + (float)q_values_init[2].item<float>());
-        Console.WriteLine("BAIXO: " + (float)q_values_init[3].item<float>());
-        System.Threading.Thread.Sleep(10000);
+    Console.WriteLine("Q VALUES OF INITIAL POSITION");
+    float[,] state_ini = new float[,] { { 10, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+    q_values_init = nnet.forward(tensor(state_ini))[0];
+    Console.WriteLine("ESQUERDA:" + (float)q_values_init[0].item<float>());
+    Console.WriteLine("DIREITA: " + (float)q_values_init[1].item<float>());
+    Console.WriteLine("CIMA: " + (float)q_values_init[2].item<float>());
+    Console.WriteLine("BAIXO: " + (float)q_values_init[3].item<float>());
+    System.Threading.Thread.Sleep(10000);
 
-        float[,] state_2;
-        Console.WriteLine("Q VALUES OF NEXT STATE");
-        int reward_2;
-        bool done_2;
-        var best_action_2 = torch.argmax(q_values_init);
-        (state_2, reward_2, done_2) = env.step(state_ini, (int)best_action_2.item<long>());
-        q_values_init = nnet.forward(tensor(state_2))[0];
-        Console.WriteLine("ESQUERDA:" +(float)q_values_init[0].item<float>());
-        Console.WriteLine("DIREITA: " +(float)q_values_init[1].item<float>());
-        Console.WriteLine("CIMA: " +(float)q_values_init[2].item<float>());
-        Console.WriteLine("BAIXO: " +(float)q_values_init[3].item<float>());
-        System.Threading.Thread.Sleep(10000);
+    float[,] state_2;
+    Console.WriteLine("Q VALUES OF NEXT STATE");
+    int reward_2;
+    bool done_2;
+    var best_action_2 = torch.argmax(q_values_init);
+    (state_2, reward_2, done_2) = env.step(state_ini, (int)best_action_2.item<long>());
+    q_values_init = nnet.forward(tensor(state_2))[0];
+    Console.WriteLine("ESQUERDA:" + (float)q_values_init[0].item<float>());
+    Console.WriteLine("DIREITA: " + (float)q_values_init[1].item<float>());
+    Console.WriteLine("CIMA: " + (float)q_values_init[2].item<float>());
+    Console.WriteLine("BAIXO: " + (float)q_values_init[3].item<float>());
+    System.Threading.Thread.Sleep(10000);
 
 
-    }
+  }
   return action;
 }
 
 
 // ============================ GET ACTION DO Q LEARNING NORMAL ===================================================
 
- int get_actionQ(float[,] state, Random rnd, float[,,,,,,,,,,] qTable, bool should_explore = true, bool sould_print = false)
+int get_actionQ(float[,] state, Random rnd, float[,,,,,,,,,,] qTable, bool should_explore = true, bool sould_print = false)
 {
-    int action = -1;
-    if (should_explore)
-    {
-        exploration_max *= exploration_decay;
-        exploration_max = Math.Max(exploration_min, exploration_max);
-        if (torch.rand(1).item<float>() < exploration_max)
-            return rnd.Next(3);
-    }
+  if (should_explore)
+  {
+    exploration_max *= exploration_decay;
+    exploration_max = Math.Max(exploration_min, exploration_max);
+    if (torch.rand(1).item<float>() < exploration_max)
+      return rnd.Next(3);
+  }
+  int best_action = argMaxTable(state, qTable);
 
-    int best_action = argMaxTable(state, qTable);
-
-    return best_action;
+  return best_action;
 }
 
-    // ===============================================================================================================
-
-
-int argMaxTable(float[,]  state, float[,,,,,,,,,,] qTable)
+// ===============================================================================================================
+float[,,,,,,,,,,] makeQtable()
 {
-    int max = -8000;
-    int compare;
-    int action;
-    for (int i = 0; i < 4; i++)
-    {
-        compare = qTable[state[0, 0]-1, state[0, 1]-1, state[0, 2]-1, state[0, 3]-1, state[0, 4]-1, state[0, 5]-1, state[0, 6]-1, state[0, 7]-1, state[0, 8]-1, state[0, 9]-1, i];
-        if (compare> max)
-        {
-            max = compare;
-            action = i;
-        }
-
-        
-    }
-    return action;
+  return new float[16, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4];
 }
 
- float[,,,,,,,,,,] makeQtable()
+int argMaxTable(float[,] state, float[,,,,,,,,,,] qTable)
+{
+  float max = float.MinValue;
+  float compare;
+  int action = -1;
+  for (int a = 0; a < n_outputs; a++)
+  {
+    compare = qTable[(int)state[0, 0] - 1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], a];
+    if (compare > max)
     {
-        return new float[16, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4];
+      max = compare;
+      action = a;
     }
+  }
+  return action;
+}
+
+
 
 
 class dqn_torch : Module<Tensor, Tensor>
@@ -489,7 +504,7 @@ class dqn_torch : Module<Tensor, Tensor>
   public override Tensor forward(Tensor input)
   {
     using var x1 = lin1.forward(input);
-    using var x2 = relu (x1);
+    using var x2 = relu(x1);
     using var x3 = lin2.forward(x2);
     using var x4 = relu(x3);
     return lin3.forward(x4);
@@ -500,122 +515,122 @@ public class simple_env
 {
   public int calc_reward(float[,] state, float[,] next_state, bool done)
   {
-        //var _state = new List<float>();
-        //var _next_state = new List<float>();
-        //for (long i = 0, imax = state.size()[0] + 1; i < imax; i++)
-        //{
-        //  _state.Add(state[0][i].item<float>());
-        //}
-        //for (long i = 0, imax = next_state.size()[0]; i < imax; i++)
-        //{
-        //  _next_state.Add(next_state[0][i].item<float>());
-        //}
+    //var _state = new List<float>();
+    //var _next_state = new List<float>();
+    //for (long i = 0, imax = state.size()[0] + 1; i < imax; i++)
+    //{
+    //  _state.Add(state[0][i].item<float>());
+    //}
+    //for (long i = 0, imax = next_state.size()[0]; i < imax; i++)
+    //{
+    //  _next_state.Add(next_state[0][i].item<float>());
+    //}
 
-        if (next_state[0,0]==1^next_state[0,0]==5^next_state[0,0]==9^next_state[0,0]==13^next_state[0,0]==14^next_state[0,0]==10)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 11 & state[0,8] == 1)
-        {
-            return -2;
-        }
-
-        else if (next_state[0,0] == 11 & state[0,8] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 15 & state[0,9] == 1)
-        {
-            return -2;
-        }
-
-        else if (next_state[0,0] == 15 & state[0,9] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 16 & state[0,4] == 1)
-        {
-            return 4;
-        }
-
-        else if (next_state[0,0] == 16 & state[0,4] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 12 & state[0,5] == 1)
-        {
-            return 4;
-        }
-
-        else if (next_state[0,0] == 12 & state[0,5] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 8 & state[0,6] == 1)
-        {
-            return 4;
-        }
-
-        else if (next_state[0,0] == 8 & state[0,6] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 4 & state[0,7] == 1)
-        {
-            return 4;
-        }
-
-        else if (next_state[0,0] == 4 & state[0,7] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 6 & state[0,2] == 1)
-        {
-            return 3;
-        }
-
-        else if (next_state[0,0] == 6 & state[0,2] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 7 & state[0,3] == 1)
-        {
-            return 5;
-        }
-
-        else if (next_state[0,0] == 7 & state[0,3] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 3 & state[0,1] == 1)
-        {
-            return 2;
-        }
-
-        else if (next_state[0,0] == 3 & state[0,1] == 0)
-        {
-            return 0;
-        }
-
-        else if (next_state[0,0] == 2)
-        {
-            return 10;
-        }
-
-        else
-        {
-            return 0;
-        }
+    if (next_state[0, 0] == 1 ^ next_state[0, 0] == 5 ^ next_state[0, 0] == 9 ^ next_state[0, 0] == 13 ^ next_state[0, 0] == 14 ^ next_state[0, 0] == 10)
+    {
+      return 0;
     }
+
+    else if (next_state[0, 0] == 11 & state[0, 8] == 1)
+    {
+      return -2;
+    }
+
+    else if (next_state[0, 0] == 11 & state[0, 8] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 15 & state[0, 9] == 1)
+    {
+      return -2;
+    }
+
+    else if (next_state[0, 0] == 15 & state[0, 9] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 16 & state[0, 4] == 1)
+    {
+      return 4;
+    }
+
+    else if (next_state[0, 0] == 16 & state[0, 4] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 12 & state[0, 5] == 1)
+    {
+      return 4;
+    }
+
+    else if (next_state[0, 0] == 12 & state[0, 5] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 8 & state[0, 6] == 1)
+    {
+      return 4;
+    }
+
+    else if (next_state[0, 0] == 8 & state[0, 6] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 4 & state[0, 7] == 1)
+    {
+      return 4;
+    }
+
+    else if (next_state[0, 0] == 4 & state[0, 7] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 6 & state[0, 2] == 1)
+    {
+      return 3;
+    }
+
+    else if (next_state[0, 0] == 6 & state[0, 2] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 7 & state[0, 3] == 1)
+    {
+      return 5;
+    }
+
+    else if (next_state[0, 0] == 7 & state[0, 3] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 3 & state[0, 1] == 1)
+    {
+      return 2;
+    }
+
+    else if (next_state[0, 0] == 3 & state[0, 1] == 0)
+    {
+      return 0;
+    }
+
+    else if (next_state[0, 0] == 2)
+    {
+      return 10;
+    }
+
+    else
+    {
+      return 0;
+    }
+  }
 
   public (float[,], bool) reset()
   {
@@ -624,341 +639,172 @@ public class simple_env
 
     return (state, done);
 
-    }
+  }
 
-    
 
-    public (float[,], int, bool) step(float[,] state, int action)
+
+  public (float[,], int, bool) step(float[,] state, int action)
   {
-    float[,] next_state = new float[,] { { state[0,0], state[0,1], state[0,2], state[0, 3], state[0, 4], state[0, 5], state[0, 6], state[0, 7], state[0, 8], state[0, 9] } };
+    float[,] next_state = new float[,] { { state[0, 0], state[0, 1], state[0, 2], state[0, 3], state[0, 4], state[0, 5], state[0, 6], state[0, 7], state[0, 8], state[0, 9] } };
     //var _state = new List<float>();
     //var _next_state = new List<float>();
     var done = false;
 
-        //for (long i = 0, imax = state.size()[0] + 1; i < imax; i++)
-        //{
-        //  _state.Add(state[0][i].item<float>());
-        //  _next_state.Add((float)state[0][i].item<float>());
-        //}
+    //for (long i = 0, imax = state.size()[0] + 1; i < imax; i++)
+    //{
+    //  _state.Add(state[0][i].item<float>());
+    //  _next_state.Add((float)state[0][i].item<float>());
+    //}
 
-        if (action == 0) // esquerda
+    switch (action)
+    {
+      case 0: // esquerda
+        switch (state[0, 0])
         {
-            //Console.WriteLine("andei pra esquerda");
-            if (state[0,0] == 1)
-            {
-                next_state[0,0] = 4;
-            }
-
-            else if (state[0,0] == 3)
-            {
-
-                next_state[0,0] = 2;
-                done = true;
-            }
-
-            else
-            {
-                next_state[0,0] -= 1;
-            }
+          case 1 or 5 or 9 or 13:
+            next_state[0, 0] += 3;
+            break;
+          default:
+            next_state[0, 0] -= 1;
+            break;
         }
+        break;
 
 
-
-        else if (action == 1) // direita 
+      case 1: // direita
+        switch (state[0, 0])
         {
-            //Console.WriteLine("andei pra direita");
-            if (state[0,0] == 16)
-            {
-                next_state[0,0] = 13;
-            }
-
-            else if (state[0,0] == 1)
-            {
-                next_state[0,0] = 2;
-                done = true;
-            }
-
-            else
-            {
-                next_state[0,0] += 1;
-            }
-
+          case 4 or 8 or 12 or 16:
+            next_state[0, 0] -= 3;
+            break;
+          default:
+            next_state[0, 0] += 1;
+            break;
         }
+        break;
 
-        else if (action == 2) // cima 
+      case 2: // cima
+        switch (state[0, 0])
         {
-            //Console.WriteLine("andei pra cima");
-            if (state[0,0] == 1)
-            {
-                next_state[0,0] = 13;
-            }
-
-            else if (state[0,0] == 3)
-            {
-                next_state[0,0] = 15;
-            }
-
-            else if (state[0,0] == 4)
-            {
-                next_state[0,0] = 16;
-            }
-
-            else if (state[0,0] == 6)
-            {
-                next_state[0,0] = 2;
-                done = true;
-            }
-
-            else
-            {
-                next_state[0,0] -= 4;
-            }
+          case 1 or 2 or 3 or 4:
+            next_state[0, 0] += 12;
+            break;
+          default:
+            next_state[0, 0] -= 4;
+            break;
         }
-
-        else if (action == 3) // baixo
+        break;
+      case 3: // baixo
+        switch (state[0, 0])
         {
-            //Console.WriteLine("andei pra baixo");
-            if (state[0,0] == 13)
-            {
-                next_state[0,0] = 1;
-            }
-
-            else if (state[0,0] == 14)
-            {
-                next_state[0,0] = 2;
-                done=true;
-            }
-
-            else if (state[0,0] == 15)
-            {
-                next_state[0,0] = 3;
-            }
-
-            else if (state[0,0] == 16)
-            {
-                next_state[0,0] = 4;
-            }
-
-            else
-            {
-                next_state[0,0] += 4;
-            }
+          case 13 or 14 or 15 or 16:
+            next_state[0, 0] -= 12;
+            break;
+          default:
+            next_state[0, 0] += 4;
+            break;
         }
+        break;
 
-        else if (action == 4) // diagonal cima direita
-        {
-            //Console.WriteLine("andei pra diagonal cima direita");
-            if (state[0,0] == 1)
-            {
-                next_state[0,0] = 14;
-            }
-
-            else if (state[0,0] == 3)
-            {
-                next_state[0,0] = 16;
-            }
-
-
-            else if (state[0,0] == 5)
-            {
-                next_state[0,0] = 2;
-                done = true;
-            }
-
-            else
-            {
-                next_state[0,0] -= 3;
-            }
-        }
-
-        else if (action == 5) // diagonal cima esquerda
-        {
-            if (state[0,0] == 5)
-            {
-                next_state[0,0] = 4;
-            }
-
-            else if (state[0,0] == 4)
-            {
-                next_state[0,0] = 15;
-            }
-
-            else if (state[0,0] == 3)
-            {
-                next_state[0,0] = 14;
-            }
-
-            else if (state[0,0] == 1)
-            {
-                next_state[0,0] = 16;
-            }
-
-            else if (state[0,0] == 7)
-            {
-                next_state[0,0] = 2;
-                done=true;
-            }
-
-            else
-            {
-                next_state[0,0] -= 5;
-            }
-        }
-
-        else if (action == 6) // diagonal baixo esquerda
-        {
-
-            if (state[0,0] == 14)
-            {
-                next_state[0,0] = 1;
-            }
-
-            else if (state[0,0] == 15)
-            {
-                next_state[0,0] = 2;
-                done = true;
-            }
-
-            else if (state[0,0] == 16)
-            {
-                next_state[0,0] = 3;
-            }
-
-            else
-            {
-                next_state[0,0] += 3;
-            }
-        }
-
-        else if (action == 7) // diagonal baixo direita
-        {
-            if (state[0,0] == 12)
-            {
-                next_state[0,0] = 13;
-            }
-
-            else if (state[0,0] == 13)
-            {
-                next_state[0,0] = 2;
-                done = true;
-            }
-
-            else if (state[0,0] == 14)
-            {
-                next_state[0,0] = 3;
-            }
-
-            else if (state[0,0] == 15)
-            {
-                next_state[0,0] = 4;
-            }
-
-            else if (state[0,0] == 16)
-            {
-                next_state[0,0] = 1;
-            }
-
-            else
-            {
-                next_state[0,0] += 5;
-            }
-        }
-
-        if (next_state[0,0] == 2 || next_state[0,0] == 13)
-        {
-            done = true;
-            //Console.WriteLine("caiu no fogo ou ganhou");
-        }
-        if (next_state[0,1] == 1 && next_state[0,0] == 3)
-        {
-            next_state[0,1] = 0;
-            next_state[0,4] = 0;
-            next_state[0,5] = 0;
-            next_state[0,6] = 0;
-            next_state[0,7] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-        if (next_state[0,2] == 1 && next_state[0,0] == 6)
-        {
-            next_state[0,2] = 0;
-            next_state[0,4] = 0;
-            next_state[0,5] = 0;
-            next_state[0,6] = 0;
-            next_state[0,7] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-        if (next_state[0,3] == 1 && next_state[0,0] == 7)
-        {
-            next_state[0,3] = 0;
-            next_state[0,4] = 0;
-            next_state[0,5] = 0;
-            next_state[0,6] = 0;
-            next_state[0,7] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-        if (next_state[0,4] == 1 && next_state[0,0] == 16)
-        {
-            next_state[0,4] = 0;
-            next_state[0,1] = 0;
-            next_state[0,2] = 0;
-            next_state[0,3] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-        if (next_state[0,5] == 1 && next_state[0,0] == 12)
-        {
-            next_state[0,5] = 0;
-            next_state[0,1] = 0;
-            next_state[0,2] = 0;
-            next_state[0,3] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-        if (next_state[0,6] == 1 && next_state[0,0] == 8)
-        {
-            next_state[0,6] = 0;
-            next_state[0,1] = 0;
-            next_state[0,2] = 0;
-            next_state[0,3] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-        if (next_state[0,7] == 1 && next_state[0,0] == 4)
-        {
-            next_state[0,7] = 0;
-            next_state[0,1] = 0;
-            next_state[0,2] = 0;
-            next_state[0,3] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-        if (next_state[0,8] == 1 && next_state[0,0] == 11)
-        {
-            next_state[0,8] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-        if (next_state[0,9] == 1 && next_state[0,0] == 15)
-        {
-            next_state[0,9] = 0;
-            //Console.WriteLine("diamante parou de existir");
-        }
-
-
-
-        
-        int reward = calc_reward(state, next_state, done);
-
-        //state.print();
-        //next_state.print();
-        //Console.WriteLine($"action: {action}, reward: {reward}");
-        //Console.WriteLine("-=--=--=--=--=--=--=--=-");
-
-        return (next_state, reward, done);
+      default:
+        break;
     }
+
+    if (next_state[0, 0] <= 0 | next_state[0, 0] >= 17)
+      next_state[0, 0] = 1;
+    
+    if (next_state[0, 0] == 2 || next_state[0, 0] == 13)
+    {
+      done = true;
+      //Console.WriteLine("caiu no fogo ou ganhou");
+    }
+    if (next_state[0, 1] == 1 && next_state[0, 0] == 3)
+    {
+      next_state[0, 1] = 0;
+      next_state[0, 4] = 0;
+      next_state[0, 5] = 0;
+      next_state[0, 6] = 0;
+      next_state[0, 7] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    if (next_state[0, 2] == 1 && next_state[0, 0] == 6)
+    {
+      next_state[0, 2] = 0;
+      next_state[0, 4] = 0;
+      next_state[0, 5] = 0;
+      next_state[0, 6] = 0;
+      next_state[0, 7] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    if (next_state[0, 3] == 1 && next_state[0, 0] == 7)
+    {
+      next_state[0, 3] = 0;
+      next_state[0, 4] = 0;
+      next_state[0, 5] = 0;
+      next_state[0, 6] = 0;
+      next_state[0, 7] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    if (next_state[0, 4] == 1 && next_state[0, 0] == 16)
+    {
+      next_state[0, 4] = 0;
+      next_state[0, 1] = 0;
+      next_state[0, 2] = 0;
+      next_state[0, 3] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    if (next_state[0, 5] == 1 && next_state[0, 0] == 12)
+    {
+      next_state[0, 5] = 0;
+      next_state[0, 1] = 0;
+      next_state[0, 2] = 0;
+      next_state[0, 3] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    if (next_state[0, 6] == 1 && next_state[0, 0] == 8)
+    {
+      next_state[0, 6] = 0;
+      next_state[0, 1] = 0;
+      next_state[0, 2] = 0;
+      next_state[0, 3] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    if (next_state[0, 7] == 1 && next_state[0, 0] == 4)
+    {
+      next_state[0, 7] = 0;
+      next_state[0, 1] = 0;
+      next_state[0, 2] = 0;
+      next_state[0, 3] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    if (next_state[0, 8] == 1 && next_state[0, 0] == 11)
+    {
+      next_state[0, 8] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    if (next_state[0, 9] == 1 && next_state[0, 0] == 15)
+    {
+      next_state[0, 9] = 0;
+      //Console.WriteLine("diamante parou de existir");
+    }
+
+    int reward = calc_reward(state, next_state, done);
+
+    //state.print();
+    //next_state.print();
+    //Console.WriteLine($"action: {action}, reward: {reward}");
+    //Console.WriteLine("-=--=--=--=--=--=--=--=-");
+
+    return (next_state, reward, done);
+  }
 
 }
 
@@ -977,10 +823,10 @@ public class replay_memory
     this.memory.Add((state, action, reward, next_state, done));
   }
 
-  public List<(float[,], int, float, float[,], bool)> argMax(float[,] state)
-    {
-
-    }
+  public int argMax(float[,] state)
+  {
+    return 1;
+  }
 
   public List<(float[,], int, float, float[,], bool)> sample(int batch_size)
   {

@@ -118,17 +118,17 @@ namespace RotinasIniciais
                 _next_state.Add(next_state[0][i].item<float>());
             }
 
-            if (_next_state[0]==1^_next_state[0]==5^_next_state[0]==9^_next_state[0]==13^_next_state[0]==14^_next_state[0]==10)
+            if (_next_state[0] == 1 ^ _next_state[0] == 5 ^ _next_state[0] == 9 ^ _next_state[0] == 13 ^ _next_state[0] == 14 ^ _next_state[0] == 10)
             {
                 return 0;
             }
 
-            else if(_next_state[0] == 11 & _next_state[8] == 1)
+            else if (_next_state[0] == 11 & _next_state[8] == 1)
             {
                 return -2;
             }
 
-            else if(_next_state[0] == 11 & _next_state[8] == 0)
+            else if (_next_state[0] == 11 & _next_state[8] == 0)
             {
                 return 0;
             }
@@ -263,11 +263,11 @@ namespace RotinasIniciais
                 _next_state.Add((float)state[0][i].item<float>());
             }
 
-            
+
 
             if (action == 0) // esquerda
             {
-                if ( _state[0] == 1)
+                if (_state[0] == 1)
                 {
                     _next_state[0] = 4;
                 }
@@ -284,16 +284,16 @@ namespace RotinasIniciais
                     _next_state[0] -= 1;
                 }
             }
-            
-            
+
+
 
             else if (action == 1) // direita 
             {
-                if(_state[0] == 16)
+                if (_state[0] == 16)
                 {
                     _next_state[0] = 13;
                 }
-                
+
                 else if (_state[0] == 1)
                 {
                     _next_state[0] = 2;
@@ -311,7 +311,7 @@ namespace RotinasIniciais
             {
                 if (_state[0] == 1)
                 {
-                    _next_state[0] = 13; 
+                    _next_state[0] = 13;
                 }
 
                 else if (_state[0] == 3)
@@ -346,7 +346,7 @@ namespace RotinasIniciais
                 else if (_state[0] == 14)
                 {
                     _next_state[0] = 2;
-                    done=true;
+                    done = true;
                 }
 
                 else if (_state[0] == 15)
@@ -392,7 +392,7 @@ namespace RotinasIniciais
 
             else if (action == 5) // diagonal cima esquerda
             {
-                if(_state[0] == 5)
+                if (_state[0] == 5)
                 {
                     _next_state[0] = 4;
                 }
@@ -415,7 +415,7 @@ namespace RotinasIniciais
                 else if (_state[0] == 7)
                 {
                     _next_state[0] = 2;
-                    done=true;
+                    done = true;
                 }
 
                 else
@@ -451,7 +451,7 @@ namespace RotinasIniciais
 
             else if (action == 7) // diagonal baixo direita
             {
-                if(_state[0] == 12)
+                if (_state[0] == 12)
                 {
                     _next_state[0] = 13;
                 }
