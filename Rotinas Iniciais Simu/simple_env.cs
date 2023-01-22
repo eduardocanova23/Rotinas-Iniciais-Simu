@@ -23,7 +23,7 @@ namespace Rotinas_Iniciais_Simu
 
       if (next_state[0, 0] == 1 ^ next_state[0, 0] == 5 ^ next_state[0, 0] == 9 ^ next_state[0, 0] == 13 ^ next_state[0, 0] == 14 ^ next_state[0, 0] == 10)
       {
-        return 0;
+        return -1;
       }
 
       else if (next_state[0, 0] == 11 & state[0, 8] == 1)

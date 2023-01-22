@@ -31,10 +31,10 @@ namespace Rotinas_Iniciais_Simu
       exploration_max = 1f;
       exploration_min = 0.0f;
       exploration_decay = 0.999f;
-      learning_rate_Q = 0.5f;
+      learning_rate_Q = 1f;
       n_outputs = 4;
       n_inputs = 10;
-      max_episodes = (int)1e5;
+      max_episodes = (int)1e4;
       qTable = makeQtable();
       loop(max_episodes, rnd);
     }
@@ -129,7 +129,7 @@ namespace Rotinas_Iniciais_Simu
       Console.WriteLine($"Ep. Reward: {ep_reward}");
       Console.WriteLine($"Reward: {reward}");
       Console.WriteLine($"Exploration Rate: {exploration_max}");
-      string fmt = "{0,9:0.##}";
+      string fmt = "{0,10:0.#}";
       Console.Write("Old Q: ");
       Console.WriteLine(fmt, old_state_Q);
       Console.Write("New Q: ");
@@ -162,7 +162,7 @@ namespace Rotinas_Iniciais_Simu
       // Print state action values
       Console.WriteLine("State action values: L R U D");
       for (int a = 0; a < 4; a++)
-        Console.Write(String.Format("{0, 5:0.00}", qTable[(int)state[0, 0] - 1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], a]));
+        Console.Write(String.Format("{0, 5:0}", qTable[(int)state[0, 0] - 1, (int)state[0, 1], (int)state[0, 2], (int)state[0, 3], (int)state[0, 4], (int)state[0, 5], (int)state[0, 6], (int)state[0, 7], (int)state[0, 8], (int)state[0, 9], a]));
 
       System.Threading.Thread.Sleep(50);
     }
