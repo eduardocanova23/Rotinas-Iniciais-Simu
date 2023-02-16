@@ -30,9 +30,9 @@ Random rnd = new();
 int memory_size = Convert.ToInt32(5 * Math.Pow(10, 5));
 int batch_size = 32;
 float gamma = 1.0f;
-float exploration_max = 1.0f;
-float exploration_min = 0.01f;
-float exploration_decay = 0.999999f;
+double exploration_max = 1.0;
+double exploration_min = 0.01;
+double exploration_decay = 0.9999995;
 float learning_rate = 0.003f;
 float learning_rate_Q = 0.1f;
 float tau = 0.125f;
@@ -71,17 +71,23 @@ float num;
 //===================== LOOP DO Q LEARNING NORMAL COM INFO INCOMPLETA =======================
 Console.WriteLine("Treinando o agente por meio do Q-Learning no ambiente com informacao totalmente incompleta -> Somente sua posicao eh conhecida");
 float[,] qTableIncomplete = makeQtableIncomplete();
+int max_steps;
 for (int ep = 0; ep < episodes; ep++)
 {
+    Console.SetCursorPosition(0, Console.CursorTop);
+    Console.Write( ep);
+
+    Console.SetCursorPosition(10, Console.CursorTop);
+    Console.Write(exploration_max);
 
     (state, done) = env.reset();
-
-    while (!done)
+    max_steps = 0;
+    while (!done && max_steps < 10)
     {
         //Console.WriteLine(action);
         //Console.WriteLine("");
         action = get_actionQIncomplete(state, rnd, qTableIncomplete);
-
+        max_steps++;
 
         (next_state, reward, done) = env.step(state, action);
 
@@ -96,11 +102,13 @@ for (int ep = 0; ep < episodes; ep++)
 //===========================================================================================
 
 // ============================= LOOP DE EXECUCAO DO Q LEARNING COM INFO INCOMPLETA ===================================
+max_steps = 0;
 Console.WriteLine("O treinamento acabou. Vamos ver como o agente se sai");
-(state, done) = env.reset();
+(state, done) = env.reset(false);
 int rec_total_inc = 0;
-while (!done)
+while (!done && max_steps < 10)
 {
+    max_steps++;
     action = get_actionQIncomplete(state, rnd, qTableIncomplete, false);
     string direcao = "nada";
     if (action == 0)
@@ -133,7 +141,7 @@ Console.WriteLine($"Minha recompensa total foi de {rec_total_inc}");
 // ================================================================================================
 
 
-
+exploration_max = 1.0;
 //====================== LOOP DO Q LEARNING NORMAL============================
 Console.WriteLine("Treinando o agente por meio do Q-Learning no ambiente com informacao completa");
 float[,,,,,,,,,,] qTable = makeQtable();
@@ -164,7 +172,7 @@ for (int ep = 0; ep < episodes; ep++)
 // ============================= LOOP DE EXECUCAO DO Q LEARNING ===================================
 
 Console.WriteLine("O treinamento acabou. Vamos ver como o agente se sai");
-(state, done) = env.reset();
+(state, done) = env.reset(false);
     int rec_total = 0;
     while (!done)
     {
@@ -200,7 +208,7 @@ Console.WriteLine("O treinamento acabou. Vamos ver como o agente se sai");
 // ================================================================================================
 
 //===================================== LOOP DO Q-LEARNING NO AMBIENTE INCOMPLETO COM 3 COMPONENTES DE ESTADO ====================
-
+exploration_max = 1.0;
 Console.WriteLine("Treinando o agente por meio do Q-Learning no ambiente com informacao incompleta -> O agente sabe sua posicao e a existencia dos diamantes azuis e amarelos");
 float[,,,] qTableIncomplete_3 = makeQtableIncomplete_3();
 simple_env_incomplete env_3 = new simple_env_incomplete();
@@ -264,7 +272,7 @@ Console.WriteLine($"Minha recompensa total foi de {rec_total_3}");
 
 // ====================================================================================================================================
 
-
+exploration_max = 1.0;
 //===================================== LOOP DO Q-LEARNING NO AMBIENTE INCOMPLETO LANTERNA ====================
 
 Console.WriteLine("Treinando o agente por meio do Q-Learning no ambiente com informacao incompleta LANTERNA -> O agente sabe sua posicao e as recompensas vizinhas");
@@ -1048,27 +1056,60 @@ public class simple_env
         
     }
 
-  public (float[,], bool) reset()
+  public (float[,], bool) reset(bool train=true)
   {
+        Random rnd = new Random();
+        int rand_pos = 2;
         var done = false;
-        float[,] state = new float[,] { { 10, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
-        this.RewardMatrix[0,0] = -1;
-        this.RewardMatrix[0,1] = 10;
-        this.RewardMatrix[0,2] = 2;
-        this.RewardMatrix[0,3] = 5;
-        this.RewardMatrix[1,0] = -1;
-        this.RewardMatrix[1, 1] = 3;
-        this.RewardMatrix[1, 2] = 5;
-        this.RewardMatrix[1, 3] = 5;
-        this.RewardMatrix[2, 0] = -1;
-        this.RewardMatrix[2, 1] = -1;
-        this.RewardMatrix[2, 2] = -2;
-        this.RewardMatrix[2, 3] = 5;
-        this.RewardMatrix[3, 0] = -1;
-        this.RewardMatrix[3, 1] = -1;
-        this.RewardMatrix[3, 2] = -2;
-        this.RewardMatrix[3, 3] = 5;
-        return (state, done);
+        float[,] state;
+        if (train)
+        {
+            state = new float[,] { { 10, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+            while (rand_pos ==2 || rand_pos ==13) {
+                rand_pos = rnd.Next(1, 17);
+                state = new float[,] { { rand_pos, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+
+            }
+            this.RewardMatrix[0, 0] = -1;
+            this.RewardMatrix[0, 1] = 10;
+            this.RewardMatrix[0, 2] = 2;
+            this.RewardMatrix[0, 3] = 5;
+            this.RewardMatrix[1, 0] = -1;
+            this.RewardMatrix[1, 1] = 3;
+            this.RewardMatrix[1, 2] = 5;
+            this.RewardMatrix[1, 3] = 5;
+            this.RewardMatrix[2, 0] = -1;
+            this.RewardMatrix[2, 1] = -1;
+            this.RewardMatrix[2, 2] = -2;
+            this.RewardMatrix[2, 3] = 5;
+            this.RewardMatrix[3, 0] = -1;
+            this.RewardMatrix[3, 1] = -1;
+            this.RewardMatrix[3, 2] = -2;
+            this.RewardMatrix[3, 3] = 5;
+            return (state, done);
+        }
+
+        else
+        {
+            state = new float[,] { { 10, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+            this.RewardMatrix[0, 0] = -1;
+            this.RewardMatrix[0, 1] = 10;
+            this.RewardMatrix[0, 2] = 2;
+            this.RewardMatrix[0, 3] = 5;
+            this.RewardMatrix[1, 0] = -1;
+            this.RewardMatrix[1, 1] = 3;
+            this.RewardMatrix[1, 2] = 5;
+            this.RewardMatrix[1, 3] = 5;
+            this.RewardMatrix[2, 0] = -1;
+            this.RewardMatrix[2, 1] = -1;
+            this.RewardMatrix[2, 2] = -2;
+            this.RewardMatrix[2, 3] = 5;
+            this.RewardMatrix[3, 0] = -1;
+            this.RewardMatrix[3, 1] = -1;
+            this.RewardMatrix[3, 2] = -2;
+            this.RewardMatrix[3, 3] = 5;
+            return (state, done);
+        }
 
     }
 
@@ -1460,27 +1501,51 @@ public class simple_env_incomplete
 
     }
 
-    public (float[,], bool) reset()
+    public (float[,], bool) reset(bool train=true)
     {
-        var done = false;
-        float[,] state = new float[,] { { 10, 1, 1 } };
-        this.RewardMatrix[0, 0] = -1;
-        this.RewardMatrix[0, 1] = 10;
-        this.RewardMatrix[0, 2] = 2;
-        this.RewardMatrix[0, 3] = 5;
-        this.RewardMatrix[1, 0] = -1;
-        this.RewardMatrix[1, 1] = 3;
-        this.RewardMatrix[1, 2] = 5;
-        this.RewardMatrix[1, 3] = 5;
-        this.RewardMatrix[2, 0] = -1;
-        this.RewardMatrix[2, 1] = -1;
-        this.RewardMatrix[2, 2] = -2;
-        this.RewardMatrix[2, 3] = 5;
-        this.RewardMatrix[3, 0] = -1;
-        this.RewardMatrix[3, 1] = -1;
-        this.RewardMatrix[3, 2] = -2;
-        this.RewardMatrix[3, 3] = 5;
-        return (state, done);
+        if (train) {
+            var done = false;
+            float[,] state = new float[,] { { 10, 1, 1 } };
+            this.RewardMatrix[0, 0] = -1;
+            this.RewardMatrix[0, 1] = 10;
+            this.RewardMatrix[0, 2] = 2;
+            this.RewardMatrix[0, 3] = 5;
+            this.RewardMatrix[1, 0] = -1;
+            this.RewardMatrix[1, 1] = 3;
+            this.RewardMatrix[1, 2] = 5;
+            this.RewardMatrix[1, 3] = 5;
+            this.RewardMatrix[2, 0] = -1;
+            this.RewardMatrix[2, 1] = -1;
+            this.RewardMatrix[2, 2] = -2;
+            this.RewardMatrix[2, 3] = 5;
+            this.RewardMatrix[3, 0] = -1;
+            this.RewardMatrix[3, 1] = -1;
+            this.RewardMatrix[3, 2] = -2;
+            this.RewardMatrix[3, 3] = 5;
+            return (state, done);
+        }
+        else
+        {
+            var done = false;
+            float[,] state = new float[,] { { 10, 1, 1 } };
+            this.RewardMatrix[0, 0] = -1;
+            this.RewardMatrix[0, 1] = 10;
+            this.RewardMatrix[0, 2] = 2;
+            this.RewardMatrix[0, 3] = 5;
+            this.RewardMatrix[1, 0] = -1;
+            this.RewardMatrix[1, 1] = 3;
+            this.RewardMatrix[1, 2] = 5;
+            this.RewardMatrix[1, 3] = 5;
+            this.RewardMatrix[2, 0] = -1;
+            this.RewardMatrix[2, 1] = -1;
+            this.RewardMatrix[2, 2] = -2;
+            this.RewardMatrix[2, 3] = 5;
+            this.RewardMatrix[3, 0] = -1;
+            this.RewardMatrix[3, 1] = -1;
+            this.RewardMatrix[3, 2] = -2;
+            this.RewardMatrix[3, 3] = 5;
+            return (state, done);
+        }
 
     }
 
