@@ -30,11 +30,11 @@ Random rnd = new();
 int memory_size = Convert.ToInt32(5 * Math.Pow(10, 5));
 int batch_size = 32;
 float gamma = 1.0f;
-double exploration_max = 1.0;
+double exploration_max = 0.5;
 double exploration_min = 0.01;
-double exploration_decay = 0.9999995;
+double exploration_decay = 1.0;
 float learning_rate = 0.003f;
-float learning_rate_Q = 0.1f;
+float learning_rate_Q = 1f;
 float tau = 0.125f;
 int n_outputs = 4;
 int n_inputs = 10;
@@ -84,8 +84,6 @@ for (int ep = 0; ep < episodes; ep++)
     max_steps = 0;
     while (!done && max_steps < 10)
     {
-        //Console.WriteLine(action);
-        //Console.WriteLine("");
         action = get_actionQIncomplete(state, rnd, qTableIncomplete);
         max_steps++;
 
@@ -95,6 +93,7 @@ for (int ep = 0; ep < episodes; ep++)
         qTableIncomplete[(int)state[0, 0]-1, action]
             = num + qTableIncomplete[(int)state[0, 0]-1, action];
 
+        //Console.WriteLine($"{state[0,0]}, {next_state[0,0]}, {reward}, {done}, {action}");
         state = next_state;
     }
 }
@@ -1182,17 +1181,17 @@ public class simple_env
             //Console.WriteLine("andei pra cima");
             if (state[0,0] == 1)
             {
-                next_state[0,0] = 1;
+                next_state[0,0] = 13;
             }
 
             else if (state[0,0] == 3)
             {
-                next_state[0,0] = 3;
+                next_state[0,0] = 15;
             }
 
             else if (state[0,0] == 4)
             {
-                next_state[0,0] = 4;
+                next_state[0,0] = 16;
             }
 
             else if (state[0,0] == 6)
@@ -1503,9 +1502,19 @@ public class simple_env_incomplete
 
     public (float[,], bool) reset(bool train=true)
     {
-        if (train) {
-            var done = false;
-            float[,] state = new float[,] { { 10, 1, 1 } };
+        Random rnd = new Random();
+        int rand_pos = 2;
+        var done = false;
+        float[,] state;
+        if (train)
+        {
+            state = new float[,] { { 10, 1, 1 } };
+            while (rand_pos ==2 || rand_pos ==13)
+            {
+                rand_pos = rnd.Next(1, 17);
+                state = new float[,] { { rand_pos, 1, 1, 1, 1, 1, 1, 1, 1, 1 } };
+
+            }
             this.RewardMatrix[0, 0] = -1;
             this.RewardMatrix[0, 1] = 10;
             this.RewardMatrix[0, 2] = 2;
@@ -1524,10 +1533,10 @@ public class simple_env_incomplete
             this.RewardMatrix[3, 3] = 5;
             return (state, done);
         }
+
         else
         {
-            var done = false;
-            float[,] state = new float[,] { { 10, 1, 1 } };
+            state = new float[,] { { 10, 1, 1 } };
             this.RewardMatrix[0, 0] = -1;
             this.RewardMatrix[0, 1] = 10;
             this.RewardMatrix[0, 2] = 2;
